@@ -15,14 +15,15 @@ exports['test basic functionality'] = function(beforeExit) {
         start: function(flux, args) {
             completion.start++;
             assert.equal(context, args);
-            setTimeout(flux('next', 'foo', 'bar', 'baz'), 10);
+            setTimeout(flux('next', 'foo', 'bar', 'baz').bind('context'), 10);
             assert.throws(function() {
                 flux('next');
             }, "Can't create more than one Flux callback");
         },
         next: function(flux, args, param1, param2, param3) {
             completion.next++;
-            assert.equal(context, args);
+            assert.equal(this, 'context')
+            assert.equal(args, context);
             assert.equal(param1, 'foo');
             assert.equal(param2, 'bar');
             assert.equal(param3, 'baz');
