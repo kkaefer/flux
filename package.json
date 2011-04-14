@@ -1,0 +1,12 @@
+{
+  "name": "flux",
+  "version": "0.0.1",
+  "description": "Async flow control management for JavaScript",
+  "author": "Konstantin Käfer <kkaefer@gmail.com>",
+
+  "main": "./lib/flux.js",
+
+  "scripts": {
+    "test": "expresso -I lib"
+  }
+}
