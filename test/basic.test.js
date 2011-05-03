@@ -9,33 +9,34 @@ exports['test basic functionality'] = function(beforeExit) {
         done: 0
     };
 
-    var context = { 'this is args': true };
-
     insertData = Flux({
-        start: function(flux, args) {
+        start: function(flux) {
             completion.start++;
-            assert.equal(context, args);
-            setTimeout(flux('next', 'foo', 'bar', 'baz').bind('context'), 10);
+            setTimeout(flux('next'), 10);
             assert.throws(function() {
                 flux('next');
             }, "Can't create more than one Flux callback");
         },
-        next: function(flux, args, param1, param2, param3) {
+        next: function(flux) {
             completion.next++;
-            assert.equal(this, 'context')
-            assert.equal(args, context);
-            assert.equal(param1, 'foo');
-            assert.equal(param2, 'bar');
-            assert.equal(param3, 'baz');
-            setTimeout(flux('third'), 10);
+            setTimeout(flux.group('third'), 10);
+            setTimeout(flux.group('third'), 10);
+            setTimeout(function() {
+                assert.throws(function() {
+                    setTimeout(flux.group('third'), 10);
+                }, "Can't create group callback after function completed");
+            }, 20);
         },
         third: function(flux) {
             completion.third++;
-            return ['exit'];
+            flux('fourth')();
         },
+        fourth: function(flux) {
+            flux('exit')();
+        }
     });
 
-    insertData(context, function() {
+    insertData('context', function() {
         completion.done++;
     });
 
@@ -47,5 +48,52 @@ exports['test basic functionality'] = function(beforeExit) {
             done: 1
         }, completion);
     });
+};
 
+exports['test parameter passing functionality'] = function(beforeExit) {
+    var completion = {
+        start: 0,
+        second: 0,
+        third: 0,
+        done: 0
+    };
+
+    insertData = Flux({
+        start: function(flux) {
+            completion.start++;
+            var next = flux('second');
+            setTimeout(function() {
+                next('foo');
+            }, 10);
+        },
+        second: function(flux, param) {
+            completion.second++;
+            assert.equal(param[0][0], 'foo');
+            setTimeout(flux.group('third'), 10);
+            setTimeout(flux.group('third'), 10);
+            setTimeout(flux.group('third'), 10);
+            setTimeout(flux.group('third'), 10);
+        },
+        third: function(flux, param) {
+            completion.third++;
+            assert.equal(4, param.length);
+            flux('fourth')();
+        },
+        fourth: function(flux) {
+            flux('exit')();
+        }
+    });
+
+    insertData('context', function() {
+        completion.done++;
+    });
+
+    beforeExit(function() {
+        assert.deepEqual({
+            start: 1,
+            second: 1,
+            third: 1,
+            done: 1
+        }, completion);
+    });
 };
