@@ -7,6 +7,6 @@
   "main": "./flux.js",
 
   "scripts": {
-    "test": "expresso -I lib"
+    "test": "expresso"
   }
 }

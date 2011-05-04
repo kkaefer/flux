@@ -1,7 +1,5 @@
 module.exports = Flux;
 
-var undefined;
-
 function Flux(fn) {
     if (typeof fn.start !== 'function') throw new Error("Flux has no start function");
 
@@ -10,14 +8,14 @@ function Flux(fn) {
 
         function check(err) {
             if (err) {
-                locked = false;
-                return next.exit(err);
+                state = false;
+                next.exit(err);
+                return;
             }
 
             args.push(Array.prototype.slice.call(arguments, 1));
-            pending--;
-            if (pending > 0) return;
-            else {
+
+            if (!--pending) {
                 var name = state, params = args;
                 state = false;
                 locked = false;
@@ -52,7 +50,7 @@ function Flux(fn) {
         };
 
         next.exit = function(err) {
-            if (locked) throw new Error("Can't exit after other callback was created");
+            if (state !== false) throw new Error("Can't exit after other callback was created");
             pending++;
             state = true;
             delete next;
