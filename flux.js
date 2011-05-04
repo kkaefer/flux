@@ -54,7 +54,7 @@ function Flux(fn) {
             pending++;
             state = true;
             delete next;
-            callback.call(context, err || null);
+            callback.call(context, err);
         };
 
         next.err = null;
