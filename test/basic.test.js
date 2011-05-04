@@ -1,4 +1,5 @@
 var assert = require('assert');
+var fs = require('fs');
 var Flux = require('..');
 
 exports['test basic functionality'] = function(beforeExit) {
@@ -9,7 +10,7 @@ exports['test basic functionality'] = function(beforeExit) {
         done: 0
     };
 
-    insertData = Flux({
+    var insertData = Flux({
         start: function(flux) {
             completion.start++;
             setTimeout(flux('next'), 10);
@@ -32,7 +33,7 @@ exports['test basic functionality'] = function(beforeExit) {
             flux('fourth')();
         },
         fourth: function(flux) {
-            flux('exit')();
+            flux.exit();
         }
     });
 
@@ -58,17 +59,17 @@ exports['test parameter passing functionality'] = function(beforeExit) {
         done: 0
     };
 
-    insertData = Flux({
+    var insertData = Flux({
         start: function(flux) {
             completion.start++;
             var next = flux('second');
             setTimeout(function() {
-                next('foo');
+                next(null, 'foo');
             }, 10);
         },
         second: function(flux, param) {
             completion.second++;
-            assert.equal(param[0][0], 'foo');
+            assert.equal(param[0][1], 'foo');
             setTimeout(flux.group('third'), 10);
             setTimeout(flux.group('third'), 10);
             setTimeout(flux.group('third'), 10);
@@ -79,9 +80,7 @@ exports['test parameter passing functionality'] = function(beforeExit) {
             assert.equal(4, param.length);
             flux('fourth')();
         },
-        fourth: function(flux) {
-            flux('exit')();
-        }
+        fourth: Flux.exit
     });
 
     insertData('context', function() {
@@ -93,6 +92,49 @@ exports['test parameter passing functionality'] = function(beforeExit) {
             start: 1,
             second: 1,
             third: 1,
+            done: 1
+        }, completion);
+    });
+};
+
+
+exports['test error handling functionality'] = function(beforeExit) {
+    var completion = {
+        start: 0,
+        second: 0,
+        third: 0,
+        done: 0
+    };
+
+    var insertData = Flux({
+        start: function(flux) {
+            completion.start++;
+            fs.stat('./doesnotexist', flux.group('second'));
+            setTimeout(flux.group('second'), 20);
+            setTimeout(flux.group('second'), 30);
+        },
+        second: function(flux) {
+            completion.second++;
+            flux('third')();
+        },
+        third: function(flux) {
+            completion.third++;
+            flux('fourth')();
+        },
+        fourth: function(flux) {
+            flux.exit();
+        }
+    });
+
+    insertData('context', function(err) {
+        completion.done++;
+    });
+
+    beforeExit(function() {
+        assert.deepEqual({
+            start: 1,
+            second: 0,
+            third: 0,
             done: 1
         }, completion);
     });

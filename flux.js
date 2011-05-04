@@ -4,40 +4,43 @@ var undefined;
 
 function Flux(fn) {
     if (typeof fn.start !== 'function') throw new Error("Flux has no start function");
-    if (fn.exit) throw new Error("Flux can't have a function named 'exit'");
-    fn.exit = true;
 
-    function flux(args, callback) {
+    function flux(context, callback) {
         var pending = 1, locked = true, state = 'start', args = [];
-        shim();
 
-        function shim(err) {
-            pending--;
+        function check(err) {
+            if (err) {
+                locked = false;
+                return next.exit(err);
+            }
+
             args.push(arguments);
+            pending--;
             if (pending > 0) return;
-            if (state === 'exit') callback(null, args);
             else {
                 var name = state, params = args;
                 state = false;
                 locked = false;
                 args = [];
-                fn[name].call(this, next, params);
+                fn[name].call(context, next, params);
                 locked = true;
                 if (state === false) throw new Error("Didn't create Flux callback");
             }
         }
 
         function next(name) {
+            if (next.err) throw new Error("Can't recover after error in Flux");
             if (state !== false) throw new Error("Can't create more than one Flux callback");
             if (!fn[name]) throw new Error("Flux callback '" + name + "' doesn't exist");
             pending++;
             state = name;
             locked = true;
-            return shim;
+            return check;
         }
 
         next.group = function(name) {
-            if (locked) throw new Error("Can't create more than one Flux callback");
+            if (next.err) throw new Error("Can't recover after error in Flux");
+            if (locked) throw new Error("Can't create Flux callback after original function returned");
             if (state === false) {
                 if (!fn[name]) throw new Error("Flux callback '" + name + "' doesn't exist");
                 state = name;
@@ -45,9 +48,25 @@ function Flux(fn) {
                 throw new Error("Can only group to one state");
             }
             pending++;
-            return shim;
+            return check;
         };
+
+        next.exit = function(err) {
+            if (locked) throw new Error("Can't exit after other callback was created");
+            pending++;
+            state = true;
+            delete next;
+            callback.call(context, err || null);
+        };
+
+        next.err = null;
+
+        check();
     };
 
     return flux;
+};
+
+Flux.exit = function(flux) {
+    flux.exit();
 };

@@ -4,7 +4,7 @@
   "description": "Async flow control management for JavaScript",
   "author": "Konstantin Käfer <kkaefer@gmail.com>",
 
-  "main": "./lib/flux.js",
+  "main": "./flux.js",
 
   "scripts": {
     "test": "expresso -I lib"
