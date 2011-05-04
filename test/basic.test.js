@@ -69,7 +69,7 @@ exports['test parameter passing functionality'] = function(beforeExit) {
         },
         second: function(flux, param) {
             completion.second++;
-            assert.equal(param[0][1], 'foo');
+            assert.equal(param[0][0], 'foo');
             setTimeout(flux.group('third'), 10);
             setTimeout(flux.group('third'), 10);
             setTimeout(flux.group('third'), 10);

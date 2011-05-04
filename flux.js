@@ -14,7 +14,7 @@ function Flux(fn) {
                 return next.exit(err);
             }
 
-            args.push(arguments);
+            args.push(Array.prototype.slice.call(arguments, 1));
             pending--;
             if (pending > 0) return;
             else {
